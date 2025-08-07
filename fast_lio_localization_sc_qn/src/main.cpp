@@ -1,15 +1,19 @@
 #include "fast_lio_localization_sc_qn.h"
+#include "rclcpp/rclcpp.hpp"
 
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "fast_lio_localization_sc_qn_node");
-    ros::NodeHandle nh_private("~");
+    rclcpp::init(argc, argv);
+    auto node = std::make_shared<FastLioLocalizationScQn>();
 
-    FastLioLocalizationScQn FastLioLocalizationScQn_(nh_private);
+    rclcpp::executors::MultiThreadedExecutor executor;
+    executor.add_node(node);
 
-    ros::AsyncSpinner spinner(3); // Use multi threads
-    spinner.start();
-    ros::waitForShutdown();
+    // Spin the node until shutdown
+    executor.spin();
+
+    // Shutdown ROS2
+    rclcpp::shutdown();
 
     return 0;
 }
