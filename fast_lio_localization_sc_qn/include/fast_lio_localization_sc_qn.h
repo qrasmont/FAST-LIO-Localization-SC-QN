@@ -73,13 +73,13 @@ private:
     ///// visualize
     bool saved_map_vis_switch_ = true;
     std::unique_ptr<tf2_ros::TransformBroadcaster> broadcaster_;
-    nav_msgs::msg::Path raw_odom_path_, corrected_odom_path_;
+    nav_msgs::msg::Path raw_odom_path_, corrected_odom_path_, map_path_, realtime_corrected_path_;
     std::vector<std::pair<pcl::PointXYZ, pcl::PointXYZ>> matched_pairs_xyz_; // for vis
     pcl::PointCloud<pcl::PointXYZ> raw_odoms_, corrected_odoms_;
     pcl::PointCloud<PointType> saved_map_pcd_; // for vis
     ///// ros
     rclcpp::Publisher<PointCloudT>::SharedPtr corrected_odom_pub_, odom_pub_;
-    rclcpp::Publisher<PathT>::SharedPtr corrected_path_pub_, path_pub_;
+    rclcpp::Publisher<PathT>::SharedPtr corrected_path_pub_, path_pub_, map_path_pub_, realtime_corrected_path_pub_;
     rclcpp::Publisher<PointCloudT>::SharedPtr corrected_current_pcd_pub_, saved_map_pub_;
     rclcpp::Publisher<PoseStampedT>::SharedPtr realtime_pose_pub_;
     rclcpp::Publisher<MarkerT>::SharedPtr map_match_pub_;

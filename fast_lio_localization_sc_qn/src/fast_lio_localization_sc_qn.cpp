@@ -89,14 +89,18 @@ void FastLioLocalizationScQn::init_params()
     broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
     raw_odom_path_.header.frame_id = map_frame_;
     corrected_odom_path_.header.frame_id = map_frame_;
+    map_path_.header.frame_id = map_frame_;
+    realtime_corrected_path_.header.frame_id = map_frame_;
 
     // publishers
     odom_pub_ = this->create_publisher<PointCloudT>("/ori_odom", 10);
     path_pub_ = this->create_publisher<PathT>("/ori_path", 10);
+    map_path_pub_ = this->create_publisher<PathT>("/map_path", 10);
     corrected_odom_pub_ = this->create_publisher<PointCloudT>("/corrected_odom", 10);
     corrected_path_pub_ = this->create_publisher<PathT>("/corrected_path", 10);
     corrected_current_pcd_pub_ = this->create_publisher<PointCloudT>("/corrected_current_pcd", 10);
     map_match_pub_ = this->create_publisher<MarkerT>("/map_match", 10);
+    realtime_corrected_path_pub_ = this->create_publisher<PathT>("/realtime_corrected_path", 10);
     realtime_pose_pub_ = this->create_publisher<PoseStampedT>("/pose_stamped", 10);
     saved_map_pub_ = this->create_publisher<PointCloudT>("/saved_map", 10);
     debug_src_pub_ = this->create_publisher<PointCloudT>("/src", 10);
@@ -122,6 +126,10 @@ void FastLioLocalizationScQn::odomPcdCallback(const OdomT::ConstSharedPtr &odom_
     auto current_pose_stamped_ = poseEigToPoseStamped(current_frame.pose_corrected_eig_, map_frame_);
     current_pose_stamped_.header.stamp = odom_msg->header.stamp;
     realtime_pose_pub_->publish(current_pose_stamped_);
+
+    realtime_corrected_path_.header.stamp = odom_msg->header.stamp;
+    realtime_corrected_path_.poses.push_back(current_pose_stamped_);
+    realtime_corrected_path_pub_->publish(realtime_corrected_path_);
 
     geometry_msgs::msg::TransformStamped trans_stamped_msg;
     trans_stamped_msg.transform = tf2::toMsg(poseEigToROSTf(current_frame.pose_corrected_eig_));
@@ -236,6 +244,9 @@ void FastLioLocalizationScQn::matchingTimerFunc()
     }
     odom_pub_->publish(pclToPclRos(raw_odoms_, map_frame_, this->get_clock()->now()));
     path_pub_->publish(raw_odom_path_);
+
+    map_path_pub_->publish(map_path_);
+
     // publish saved map
     if (saved_map_vis_switch_ && saved_map_pub_->get_subscription_count() > 0)
     {
@@ -333,6 +344,10 @@ void FastLioLocalizationScQn::loadMap(const std::string &saved_map_path)
         saved_map_from_bag_.push_back(PosePcdReduced(load_pose_vec[i], load_pcd_vec[i], i));
         saved_map_pcd_ += transformPcd(saved_map_from_bag_[i].pcd_, saved_map_from_bag_[i].pose_eig_);
         map_matcher_->updateScancontext(saved_map_from_bag_[i].pcd_); // note: update scan context for loop candidate detection
+
+	// Populate map path
+        auto pose_stamped = poseEigToPoseStamped(saved_map_from_bag_[i].pose_eig_, map_frame_);
+        map_path_.poses.push_back(pose_stamped);
     }
     saved_map_pcd_ = *voxelizePcd(saved_map_pcd_, voxel_res_);
     return;

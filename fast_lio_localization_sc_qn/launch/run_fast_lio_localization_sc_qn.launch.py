@@ -25,7 +25,7 @@ def launch_setup(context, *args, **kwargs):
     rviz_use = LaunchConfiguration('rviz', default='true')
 
     default_rviz_config_path = os.path.join(
-        config_path_value, 'new_loc.rviz')
+        config_path_value, 'localization_rviz.rviz')
 
     rviz_cfg = LaunchConfiguration('rviz_cfg', default=default_rviz_config_path)
     params_file = os.path.join(
