@@ -23,6 +23,7 @@ def launch_setup(context, *args, **kwargs):
     config_path_value = config_path.perform(context)
     use_sim_time = LaunchConfiguration('use_sim_time', default='false')
     rviz_use = LaunchConfiguration('rviz', default='true')
+    saved_map = LaunchConfiguration('saved_map', default='')
 
     default_rviz_config_path = os.path.join(
         config_path_value, 'localization_rviz.rviz')
@@ -37,7 +38,8 @@ def launch_setup(context, *args, **kwargs):
         package="fast_lio_localization_sc_qn",
         executable="fast_lio_localization_sc_qn_node",
         name="fast_lio_localization_sc_qn_node",
-        parameters=[params_file, {'use_sim_time': use_sim_time}],
+        parameters=[params_file, {'use_sim_time': use_sim_time},
+                    {'basic': {'saved_map': saved_map}}],
         output="screen"
     )
 
