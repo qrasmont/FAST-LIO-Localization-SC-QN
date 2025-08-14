@@ -82,9 +82,6 @@ void FastLioLocalizationScQn::init_params()
     ////// Matching init
     map_matcher_ = std::make_shared<MapMatcher>(mm_config);
 
-    ////// Load map
-    loadMap(saved_map_path);
-
     ////// ROS things
     broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
     raw_odom_path_.header.frame_id = map_frame_;
@@ -92,17 +89,21 @@ void FastLioLocalizationScQn::init_params()
     map_path_.header.frame_id = map_frame_;
     realtime_corrected_path_.header.frame_id = map_frame_;
 
+    // For latched topics
+    rclcpp::QoS latched_qos(1);
+    latched_qos.transient_local();
+
     // publishers
     odom_pub_ = this->create_publisher<PointCloudT>("/ori_odom", 10);
     path_pub_ = this->create_publisher<PathT>("/ori_path", 10);
-    map_path_pub_ = this->create_publisher<PathT>("/map_path", 10);
+    map_path_pub_ = this->create_publisher<PathT>("/map_path", latched_qos);
     corrected_odom_pub_ = this->create_publisher<PointCloudT>("/corrected_odom", 10);
     corrected_path_pub_ = this->create_publisher<PathT>("/corrected_path", 10);
     corrected_current_pcd_pub_ = this->create_publisher<PointCloudT>("/corrected_current_pcd", 10);
     map_match_pub_ = this->create_publisher<MarkerT>("/map_match", 10);
     realtime_corrected_path_pub_ = this->create_publisher<PathT>("/realtime_corrected_path", 10);
     realtime_pose_pub_ = this->create_publisher<PoseStampedT>("/pose_stamped", 10);
-    saved_map_pub_ = this->create_publisher<PointCloudT>("/saved_map", 10);
+    saved_map_pub_ = this->create_publisher<PointCloudT>("/saved_map", latched_qos);
     debug_src_pub_ = this->create_publisher<PointCloudT>("/src", 10);
     debug_dst_pub_ = this->create_publisher<PointCloudT>("/dst", 10);
     debug_coarse_aligned_pub_ = this->create_publisher<PointCloudT>("/coarse_aligned_quatro", 10);
@@ -116,6 +117,23 @@ void FastLioLocalizationScQn::init_params()
 
     // Timers
     match_timer_ = this->create_wall_timer(std::chrono::duration<double>(1.0/map_match_hz), std::bind(&FastLioLocalizationScQn::matchingTimerFunc, this));
+    initial_publish_timer_ = this->create_wall_timer(std::chrono::seconds(1), std::bind(&FastLioLocalizationScQn::initialMapPublish, this));
+
+    ////// Load map
+    loadMap(saved_map_path);
+}
+
+void FastLioLocalizationScQn::initialMapPublish()
+{
+    // One shot
+    initial_publish_timer_->cancel();
+    RCLCPP_INFO(this->get_logger(), "Timer triggered for initial map publication.");
+
+    // Publish the loaded map and path
+    RCLCPP_INFO(this->get_logger(), "Publishing loaded map and path...");
+    map_path_.header.stamp = this->get_clock()->now();
+    map_path_pub_->publish(map_path_);
+    saved_map_pub_->publish(pclToPclRos(saved_map_pcd_, map_frame_, this->get_clock()->now()));
 }
 
 void FastLioLocalizationScQn::odomPcdCallback(const OdomT::ConstSharedPtr &odom_msg, const PointCloudT::ConstSharedPtr &pcd_msg)
@@ -245,18 +263,6 @@ void FastLioLocalizationScQn::matchingTimerFunc()
     odom_pub_->publish(pclToPclRos(raw_odoms_, map_frame_, this->get_clock()->now()));
     path_pub_->publish(raw_odom_path_);
 
-    map_path_pub_->publish(map_path_);
-
-    // publish saved map
-    if (saved_map_vis_switch_ && saved_map_pub_->get_subscription_count() > 0)
-    {
-        saved_map_pub_->publish(pclToPclRos(saved_map_pcd_, map_frame_, this->get_clock()->now()));
-        saved_map_vis_switch_ = false;
-    }
-    if (!saved_map_vis_switch_ && saved_map_pub_->get_subscription_count() == 0)
-    {
-        saved_map_vis_switch_ = true;
-    }
     high_resolution_clock::time_point t3_ = high_resolution_clock::now();
     RCLCPP_INFO(this->get_logger(), "Matching: %.1fms, vis: %.1fms",
              duration_cast<microseconds>(t2_ - t1_).count() / 1e3,
@@ -350,5 +356,6 @@ void FastLioLocalizationScQn::loadMap(const std::string &saved_map_path)
         map_path_.poses.push_back(pose_stamped);
     }
     saved_map_pcd_ = *voxelizePcd(saved_map_pcd_, voxel_res_);
+
     return;
 }

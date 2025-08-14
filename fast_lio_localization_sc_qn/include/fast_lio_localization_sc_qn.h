@@ -84,7 +84,7 @@ private:
     rclcpp::Publisher<PoseStampedT>::SharedPtr realtime_pose_pub_;
     rclcpp::Publisher<MarkerT>::SharedPtr map_match_pub_;
     rclcpp::Publisher<PointCloudT>::SharedPtr debug_src_pub_, debug_dst_pub_, debug_coarse_aligned_pub_, debug_fine_aligned_pub_;
-    rclcpp::TimerBase::SharedPtr match_timer_;
+    rclcpp::TimerBase::SharedPtr match_timer_, initial_publish_timer_;
     // odom, pcd sync subscriber
     std::shared_ptr<message_filters::Synchronizer<odom_pcd_sync_pol>> sub_odom_pcd_sync_ = nullptr;
     std::shared_ptr<message_filters::Subscriber<OdomT>> sub_odom_ = nullptr;
@@ -99,6 +99,7 @@ public:
 private:
     // methods
     void init_params();
+    void initialMapPublish();
     void updateOdomsAndPaths(const PosePcd &pose_pcd_in);
     bool checkIfKeyframe(const PosePcd &pose_pcd_in, const PosePcd &latest_pose_pcd);
     visualization_msgs::msg::Marker getMatchMarker(const std::vector<std::pair<pcl::PointXYZ, pcl::PointXYZ>> &match_xyz_pairs);
