@@ -14,6 +14,7 @@ void FastLioLocalizationScQn::init_params()
     MapMatcherConfig mm_config;
     auto &gc = mm_config.gicp_config_;
     auto &qc = mm_config.quatro_config_;
+    auto &sc = mm_config.scancontext_config_;
 
     /* basic */
     this->declare_parameter<std::string>("basic.map_frame", "map");
@@ -75,6 +76,7 @@ void FastLioLocalizationScQn::init_params()
     this->declare_parameter<double>("quatro.rotation.gnc_factor", 0.25);
     this->declare_parameter<double>("quatro.rotation.rot_cost_diff_threshold", 0.25);
     this->declare_parameter<int>("quatro.rotation.num_max_iter", 50);
+    this->declare_parameter<double>("scancontext.dist_thres", 0.2);
     this->get_parameter("quatro.enable", mm_config.enable_quatro_);
     this->get_parameter("quatro.optimize_matching", qc.use_optimized_matching_);
     this->get_parameter("quatro.distance_threshold", qc.quatro_distance_threshold_);
@@ -86,6 +88,7 @@ void FastLioLocalizationScQn::init_params()
     this->get_parameter("quatro.rotation.gnc_factor", qc.rot_gnc_factor_);
     this->get_parameter("quatro.rotation.rot_cost_diff_threshold", qc.rot_cost_diff_thr_);
     this->get_parameter("quatro.rotation.num_max_iter", qc.quatro_max_iter_);
+    this->get_parameter("scancontext.dist_thres", sc.dist_thres_);
 
     ////// Matching init
     map_matcher_ = std::make_shared<MapMatcher>(mm_config);

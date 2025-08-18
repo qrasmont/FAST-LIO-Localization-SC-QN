@@ -51,6 +51,11 @@ struct QuatroConfig
     double rot_cost_diff_thr_ = 0.0001;
 };
 
+struct ScanContextConfig
+{
+    double dist_thres_ = 0.2;
+};
+
 struct MapMatcherConfig
 {
     bool enable_quatro_ = true;
@@ -59,6 +64,7 @@ struct MapMatcherConfig
     double scancontext_max_correspondence_distance_;
     NanoGICPConfig gicp_config_;
     QuatroConfig quatro_config_;
+    ScanContextConfig scancontext_config_;
 };
 
 struct RegistrationOutput

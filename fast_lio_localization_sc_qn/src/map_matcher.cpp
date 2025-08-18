@@ -5,6 +5,7 @@ MapMatcher::MapMatcher(const MapMatcherConfig &config)
     config_ = config;
     const auto &gc = config_.gicp_config_;
     const auto &qc = config_.quatro_config_;
+    const auto &sc = config_.scancontext_config_;
     ////// nano_gicp init
     nano_gicp_.setNumThreads(gc.nano_thread_number_);
     nano_gicp_.setCorrespondenceRandomness(gc.nano_correspondences_number_);
@@ -25,6 +26,9 @@ MapMatcher::MapMatcher(const MapMatcherConfig &config)
                                                           qc.use_optimized_matching_,
                                                           qc.quatro_distance_threshold_,
                                                           qc.quatro_max_num_corres_);
+    ////// ScanContext
+    sc_manager_.setSCdistThres(sc.dist_thres_);
+
     src_cloud_.reset(new pcl::PointCloud<PointType>);
     dst_cloud_.reset(new pcl::PointCloud<PointType>);
 }
