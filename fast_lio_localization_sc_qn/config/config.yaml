@@ -8,6 +8,9 @@ fast_lio_localization_sc_qn_node:
 
     keyframe:
       keyframe_threshold: 1.5                       # unit [meter] every this distance, generate keyframe
+      enable_rotation_check: true                   # enable keyframe generation on in-place rotation
+      keyframe_rotation_threshold_deg: 270.0        # unit [degree] if robot rotates more than this, generate keyframe
+      in_place_translation_threshold: 0.2           # unit [meter] translational movement below this is considered "in-place"
       num_submap_keyframes: 5                       # how many subkeyframes are merged to ICP with current keyframe (closest-this ~ closest+this, if exists)
 
     match:

@@ -27,8 +27,16 @@ void FastLioLocalizationScQn::init_params()
 
     /* keyframe */
     this->declare_parameter<double>("keyframe.keyframe_threshold", 1.0);
+    this->declare_parameter<bool>("keyframe.enable_rotation_check", false);
+    this->declare_parameter<double>("keyframe.keyframe_rotation_threshold_deg", 270.0);
+    this->declare_parameter<double>("keyframe.in_place_translation_threshold", 0.2);
     this->declare_parameter<int>("keyframe.num_submap_keyframes", 5);
     this->get_parameter("keyframe.keyframe_threshold", keyframe_dist_thr_);
+    this->get_parameter("keyframe.enable_rotation_check", enable_rotation_check_);
+    double keyframe_rotation_threshold_deg;
+    this->get_parameter("keyframe.keyframe_rotation_threshold_deg", keyframe_rotation_threshold_deg);
+    keyframe_rotation_threshold_rad_ = keyframe_rotation_threshold_deg * M_PI / 180.0;
+    this->get_parameter("keyframe.in_place_translation_threshold", in_place_translation_threshold_);
     this->get_parameter("keyframe.num_submap_keyframes", mm_config.num_submap_keyframes_);
 
     /* match */
@@ -311,7 +319,29 @@ visualization_msgs::msg::Marker FastLioLocalizationScQn::getMatchMarker(const st
 
 bool FastLioLocalizationScQn::checkIfKeyframe(const PosePcd &pose_pcd_in, const PosePcd &latest_pose_pcd)
 {
-    return keyframe_dist_thr_ < (latest_pose_pcd.pose_corrected_eig_.block<3, 1>(0, 3) - pose_pcd_in.pose_corrected_eig_.block<3, 1>(0, 3)).norm();
+    double trans_dist = (latest_pose_pcd.pose_corrected_eig_.block<3, 1>(0, 3) - pose_pcd_in.pose_corrected_eig_.block<3, 1>(0, 3)).norm();
+
+    if (trans_dist > keyframe_dist_thr_)
+    {
+        return true;
+    }
+
+    if (enable_rotation_check_ && trans_dist < in_place_translation_threshold_)
+    {
+        Eigen::Matrix3d last_rot = latest_pose_pcd.pose_corrected_eig_.block<3, 3>(0, 0);
+        Eigen::Matrix3d current_rot = pose_pcd_in.pose_corrected_eig_.block<3, 3>(0, 0);
+
+        Eigen::Matrix3d relative_rot = last_rot.transpose() * current_rot;
+
+        Eigen::AngleAxisd angle_axis(relative_rot);
+
+        if (std::abs(angle_axis.angle()) > keyframe_rotation_threshold_rad_)
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 void FastLioLocalizationScQn::loadMap(const std::string &saved_map_path)

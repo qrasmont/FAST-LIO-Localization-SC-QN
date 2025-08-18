@@ -69,6 +69,9 @@ private:
     Eigen::Matrix4d last_corrected_TF_ = Eigen::Matrix4d::Identity();
     ///// map match
     double keyframe_dist_thr_;
+    bool enable_rotation_check_;
+    double keyframe_rotation_threshold_rad_;
+    double in_place_translation_threshold_;
     double voxel_res_;
     ///// visualize
     bool saved_map_vis_switch_ = true;
